@@ -14,7 +14,7 @@ jobs:
       pull-requests: write
       contents: read
     steps:
-      - uses: Codium-ai/pr-agent@main
+      - uses: Codium-ai/pr-agent@v0.26
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_API_KEY }}
