@@ -371,7 +371,7 @@ PR-Agent es open source y produce reviews similares a CodeRabbit. La diferencia 
 | | CodeRabbit | PR-Agent |
 |---|---|---|
 | Precio | ~$15/seat/mes (orgs privadas) | Solo el costo de la API |
-| Costo por PR | Incluido | ~$0.01–0.05 con Claude Haiku |
+| Costo por PR | Incluido | ~$0.01–0.05 con Claude Haiku 4.5 |
 | Multi-lenguaje | Sí | Sí |
 | Comentarios en PRs | Sí | Sí |
 | Open source | No | Sí |
@@ -403,8 +403,21 @@ on:
 
 jobs:
   pr_agent:
-    uses: Tenmas-tech-AI/.github/.github/workflows/pr-agent.yml@main
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: Codium-ai/pr-agent@v0.26
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          config.model: "anthropic/claude-haiku-4-5-20251001"
+          config.fallback_models: '["anthropic/claude-haiku-4-5-20251001"]'
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "false"
+          github_action_config.auto_improve: "false"
 ```
 
 Con esto, cada PR abrirá automáticamente un review de PR-Agent.
