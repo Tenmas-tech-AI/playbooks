@@ -381,8 +381,8 @@ PR-Agent es open source y produce reviews similares a CodeRabbit. La diferencia 
 El workflow está definido una sola vez en el repo `.github` de la organización. Cada repo solo necesita un archivo pequeño que lo llama.
 
 **Lo que ya existe en la org:**
-- Repo `tenmas/.github` con el workflow reutilizable
-- Secret `OPENAI_API_KEY` configurado a nivel de organización
+- Repo `Tenmas-tech-AI/.github` con el workflow reutilizable
+- Secret `ANTHROPIC_API_KEY` configurado a nivel de organización
 
 **Lo que debes hacer tú — agregar este archivo a tu repo:**
 
@@ -403,7 +403,7 @@ on:
 
 jobs:
   pr_agent:
-    uses: tenmas/.github/.github/workflows/pr-agent.yml@main
+    uses: Tenmas-tech-AI/.github/.github/workflows/pr-agent.yml@main
     secrets: inherit
 ```
 
