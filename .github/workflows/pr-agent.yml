@@ -16,6 +16,10 @@ jobs:
     steps:
       - uses: Codium-ai/pr-agent@main
         env:
-          CONFIG.AI_PROVIDER: "anthropic"
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          config.model: "anthropic/claude-3-5-haiku-20241022"
+          config.fallback_models: '["anthropic/claude-3-5-haiku-20241022"]'
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "true"
+          github_action_config.auto_improve: "false"
