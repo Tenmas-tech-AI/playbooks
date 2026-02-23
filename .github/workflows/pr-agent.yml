@@ -8,5 +8,5 @@ on:
 
 jobs:
   pr_agent:
-    uses: your-org/.github/.github/workflows/pr-agent.yml@main
+    uses: tenmas/.github/.github/workflows/pr-agent.yml@main
     secrets: inherit 
