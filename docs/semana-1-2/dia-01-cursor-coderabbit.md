@@ -226,6 +226,12 @@ los permisos antes de ejecutar cada operación.
 
 ## Parte 2: CodeRabbit
 
+:::warning Costo en organizaciones
+CodeRabbit es gratuito para repositorios públicos, pero **para organizaciones privadas tiene un costo por seat** (~$15/mes por usuario). Si el equipo crece o no se quiere asumir ese costo, la alternativa recomendada es **PR-Agent** (ver [Parte 3](#parte-3-pr-agent-alternativa-gratuita-a-coderabbit)).
+
+En Tenmás usamos CodeRabbit mientras el costo sea razonable. Si en algún momento se decide migrar, PR-Agent ya está configurado en la organización.
+:::
+
 ### ¿Qué hace CodeRabbit exactamente?
 
 CodeRabbit es un reviewer de código con IA que corre automáticamente en cada PR. Esto es lo que produce:
@@ -348,6 +354,88 @@ reviews:
   path_instructions:
     - path: "src/scripts/**"
       instructions: "These are one-off migration scripts. Focus only on data safety issues, not code style."
+```
+
+---
+
+## Parte 3: PR-Agent — Alternativa gratuita a CodeRabbit
+
+:::note Estado en Tenmás
+PR-Agent ya está configurado en la organización de Tenmás. El secret de API y el reusable workflow en el repo `.github` ya existen. Solo necesitas agregar el workflow a tu repositorio.
+:::
+
+### ¿Por qué PR-Agent?
+
+PR-Agent es open source y produce reviews similares a CodeRabbit. La diferencia clave es que usas tu propia API key — pagas directamente a OpenAI o Anthropic, sin intermediarios ni seats.
+
+| | CodeRabbit | PR-Agent |
+|---|---|---|
+| Precio | ~$15/seat/mes (orgs privadas) | Solo el costo de la API |
+| Costo por PR | Incluido | ~$0.01–0.05 con Claude Haiku 4.5 |
+| Multi-lenguaje | Sí | Sí |
+| Comentarios en PRs | Sí | Sí |
+| Open source | No | Sí |
+
+### Cómo funciona en Tenmás (Reusable Workflow)
+
+El workflow está definido una sola vez en el repo `.github` de la organización. Cada repo solo necesita un archivo pequeño que lo llama.
+
+**Lo que ya existe en la org:**
+- Repo `Tenmas-tech-AI/.github` con el workflow reutilizable
+- Secret `ANTHROPIC_API_KEY` configurado a nivel de organización
+
+**Lo que debes hacer tú — agregar este archivo a tu repo:**
+
+```
+.github/
+└── workflows/
+    └── pr-agent.yml
+```
+
+```yaml
+name: PR Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  pr_agent:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: Codium-ai/pr-agent@v0.26
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC.KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          config.model: "anthropic/claude-haiku-4-5-20251001"
+          config.fallback_models: '["anthropic/claude-haiku-4-5-20251001"]'
+          github_action_config.auto_review: "true"
+          github_action_config.auto_describe: "false"
+          github_action_config.auto_improve: "false"
+```
+
+Con esto, cada PR abrirá automáticamente un review de PR-Agent.
+
+### Comandos disponibles en el PR
+
+PR-Agent responde a comandos en los comentarios:
+
+| Comando | Qué hace |
+|---|---|
+| `/review` | Fuerza un nuevo review completo |
+| `/describe` | Regenera el resumen del PR |
+| `/improve` | Sugiere mejoras de código |
+| `/ask ¿pregunta?` | Pregunta sobre el código del PR |
+
+**Ejemplo:**
+```
+/ask ¿Hay algún problema de seguridad en los cambios de autenticación?
 ```
 
 ---
