@@ -8,5 +8,14 @@ on:
 
 jobs:
   pr_agent:
-    uses: Tenmas-tech-AI/.github/.github/workflows/pr-agent.yml@main
-    secrets: inherit 
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: Codium-ai/pr-agent@main
+        env:
+          CONFIG.AI_PROVIDER: "anthropic"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
