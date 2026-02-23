@@ -1,0 +1,8 @@
+{
+  "label": "Introducción",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "description": "Overview del programa AI-Native de Tenmás: objetivos, stack técnico y estructura del plan."
+  }
+}

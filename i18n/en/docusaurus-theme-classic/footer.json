@@ -1,0 +1,46 @@
+{
+  "link.item.label.Introduction": {
+    "message": "Introduction",
+    "description": "Footer link"
+  },
+  "link.item.label.Weeks 1-2": {
+    "message": "Weeks 1-2",
+    "description": "Footer link"
+  },
+  "link.item.label.Cursor AI": {
+    "message": "Cursor AI",
+    "description": "Footer link"
+  },
+  "link.item.label.Technical Stack": {
+    "message": "Technical Stack",
+    "description": "Footer link"
+  },
+  "link.item.label.Objectives": {
+    "message": "Objectives",
+    "description": "Footer link"
+  },
+  "link.item.label.Blog": {
+    "message": "Blog",
+    "description": "Footer link"
+  },
+  "link.item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Footer link"
+  },
+  "link.title.Playbooks": {
+    "message": "Playbooks",
+    "description": "Footer column title"
+  },
+  "link.title.Tools": {
+    "message": "Tools",
+    "description": "Footer column title"
+  },
+  "link.title.Resources": {
+    "message": "Resources",
+    "description": "Footer column title"
+  },
+  "copyright": {
+    "message": "Copyright © 2026 Tenmás. Created by Linder Hassinger - AI Tech Lead.",
+    "description": "The footer copyright"
+  }
+}

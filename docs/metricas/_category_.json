@@ -1,0 +1,8 @@
+{
+  "label": "Métricas",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Quality gates, métricas de productividad y dashboards de monitoreo."
+  }
+}
