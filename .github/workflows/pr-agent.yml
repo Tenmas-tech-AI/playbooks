@@ -1,0 +1,12 @@
+name: PR Agent
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  issue_comment:
+    types: [created]
+
+jobs:
+  pr_agent:
+    uses: your-org/.github/.github/workflows/pr-agent.yml@main
+    secrets: inherit 
