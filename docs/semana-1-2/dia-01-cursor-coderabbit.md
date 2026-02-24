@@ -550,3 +550,7 @@ Al terminar el día, verifica:
 - [CodeRabbit — Configuration Reference](https://docs.coderabbit.ai/getting-started/configure-coderabbit)
 - [Anthropic — Claude para código](https://docs.anthropic.com/en/docs/use-cases/coding)
 - [Guía de prompting para ingenieros](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview)
+
+---
+
+➡️ **Siguiente:** [Día 2 — GitHub Security + PromptLayer](./dia-02-github-security-promptlayer)
