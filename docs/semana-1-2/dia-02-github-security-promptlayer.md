@@ -5,9 +5,9 @@ title: "Día 2: GitHub Security + PromptLayer"
 
 # Día 2: GitHub Security + PromptLayer
 
-**Duración:** ~3 horas | **Estado:** Pendiente
+**Duración:** ~3 horas | **Estado:** ✅ Completo
 
-⬅️ **Anterior:** [Día 1 — Cursor AI + CodeRabbit](./dia-01-cursor-coderabbit)
+⬅️ **Anterior:** [Día 1 — Cursor AI + CodeRabbit](./dia-01-cursor-coderabbit) | ➡️ **Siguiente:** [Día 3 — n8n + Playwright](./dia-03-n8n-playwright)
 
 ## Objetivo del día
 
@@ -190,6 +190,31 @@ PromptLayer es observabilidad para LLMs. Registra cada llamada que tu aplicació
 - Historial por versión de prompt
 
 Es el equivalente a tener logs de API, pero específico para prompts.
+
+### ¿Para qué sirve y cuándo usarlo?
+
+:::warning PromptLayer solo funciona con tu código
+PromptLayer **no** registra llamadas de Claude Code (CLI), Claude.ai, Cursor AI, ni ninguna herramienta que use Claude internamente. Solo registra llamadas que **tu aplicación** hace directamente al SDK de Anthropic.
+:::
+
+**Cuándo tiene sentido usarlo:**
+
+| Situación | ¿Usar PromptLayer? |
+|---|---|
+| Tu app llama a `client.messages.create(...)` | ✅ Sí |
+| Estás iterando prompts y quieres comparar resultados | ✅ Sí |
+| Quieres saber cuánto cuesta cada llamada | ✅ Sí |
+| Usas Claude Code o Cursor en tu flujo de trabajo | ❌ No aplica |
+| Tu app aún no hace llamadas a la API de Claude | ❌ Espera al Día 4 |
+
+**Casos de uso concretos en Tenmás:**
+
+1. **Durante desarrollo** — Ver exactamente qué prompt envía tu app y qué responde Claude, sin agregar `console.log` manualmente. Es el "inspector de red" para LLMs.
+2. **Debugging de respuestas inesperadas** — Comparar el prompt real enviado vs el que creías estar enviando.
+3. **Control de costos** — Ver cuántos tokens consume cada feature antes de ir a producción.
+4. **Versionado de prompts** — Guardar versiones de prompts del sistema y comparar cuál da mejores resultados.
+
+**En el roadmap de Tenmás:** PromptLayer se integra a partir del **Día 4** cuando se configuran los pipelines de IA con LangChain. En esta etapa (Día 2), el objetivo es tener la cuenta lista y entender qué registra.
 
 ### Limitaciones del tier free
 
