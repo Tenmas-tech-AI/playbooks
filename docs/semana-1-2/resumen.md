@@ -22,7 +22,7 @@ Al terminar las 2 semanas, el equipo debe tener:
 | Día | Foco | Herramientas | Estado |
 |-----|------|-------------|--------|
 | [**Día 1**](./dia-01-cursor-coderabbit) | Editor + Code Review | Cursor AI, CodeRabbit | ✅ Completo |
-| Día 2 | Seguridad + Observabilidad | GitHub Security, PromptLayer | 🔲 Pendiente |
+| [**Día 2**](./dia-02-github-security-promptlayer) | Seguridad + Observabilidad | GitHub Security, PromptLayer | ✅ Completo |
 | Día 3 | Automatización + Testing | Make.com, Playwright | 🔲 Pendiente |
 | Día 4 | Pipelines de IA | LangChain | 🔲 Pendiente |
 | Día 5 | Monitoreo | Grafana, Métricas baseline | 🔲 Pendiente |
