@@ -260,6 +260,19 @@ Schedule (diario 08:00)
 
 Los workflows 1–3 se pueden construir hoy porque solo necesitan el webhook de GitHub y Slack. Los workflows 4–5 requieren tokens adicionales y se integran en el Día 9.
 
+:::tip Workflows listos para importar
+Los JSONs de todos los workflows ya están disponibles en el repo de la organización:
+**[Tenmas-tech-AI/n8n-workflows](https://github.com/Tenmas-tech-AI/n8n-workflows)**
+
+Para usarlos en cualquier proyecto:
+1. Clona o descarga el JSON del workflow que necesitas
+2. En n8n: **Settings → Import workflow** → selecciona el archivo
+3. Actualiza las credenciales de Slack y el webhook URL de GitHub según tu proyecto
+4. Activa el workflow
+
+No necesitas construir los workflows desde cero — importa y ajusta.
+:::
+
 ---
 
 ### Qué NO configurar todavía
@@ -505,6 +518,7 @@ Al terminar el día, verifica:
 - [ ] `N8N_PASSWORD` en `.env` local (nunca en el repo)
 - [ ] Workflow de prueba ejecutado correctamente en la UI
 - [ ] Webhook de GitHub configurado apuntando al endpoint de n8n
+- [ ] JSONs importados desde [Tenmas-tech-AI/n8n-workflows](https://github.com/Tenmas-tech-AI/n8n-workflows)
 - [ ] Workflow 1: PR listo para review → notifica en Slack ✅
 - [ ] Workflow 2: PR mergeado → notifica en Slack ✅
 - [ ] Workflow 3: Dependabot crítico → DM al tech lead ✅
@@ -520,6 +534,7 @@ Al terminar el día, verifica:
 
 ## Recursos
 
+- [Tenmas-tech-AI/n8n-workflows](https://github.com/Tenmas-tech-AI/n8n-workflows) — JSONs listos para importar en n8n
 - [n8n Docs — Self-hosted con Docker](https://docs.n8n.io/hosting/installation/docker/)
 - [n8n Docs — Environment variables](https://docs.n8n.io/hosting/configuration/environment-variables/)
 - [Playwright Docs — Getting started](https://playwright.dev/docs/intro)
