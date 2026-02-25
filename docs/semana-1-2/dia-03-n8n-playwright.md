@@ -383,6 +383,168 @@ test("página principal carga correctamente", async ({ page }) => {
 });
 ```
 
+### Ejemplos de tests para Tenmás
+
+Estos son los patrones más comunes que vas a necesitar. Úsalos como base para los tests de la aplicación.
+
+---
+
+#### Ejemplo 1: Navegación entre páginas
+
+Verifica que las rutas principales de la app cargan y tienen el contenido esperado.
+
+```typescript
+// tests/navigation.spec.ts
+import { test, expect } from "@playwright/test";
+
+test.describe("Navegación principal", () => {
+  test("home carga con el título correcto", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveTitle(/Tenmás/);
+  });
+
+  test("ruta /dashboard es accesible", async ({ page }) => {
+    await page.goto("/dashboard");
+    // Verifica que no redirige a 404
+    await expect(page).not.toHaveURL(/404/);
+    await expect(page.locator("h1")).toBeVisible();
+  });
+
+  test("link de navegación lleva a la página correcta", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "Dashboard" }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+  });
+
+  test("botón atrás funciona correctamente", async ({ page }) => {
+    await page.goto("/");
+    await page.goto("/dashboard");
+    await page.goBack();
+    await expect(page).toHaveURL("/");
+  });
+});
+```
+
+---
+
+#### Ejemplo 2: Login / autenticación
+
+Verifica el flujo completo de login: credenciales correctas, incorrectas y redirección post-login.
+
+```typescript
+// tests/auth.spec.ts
+import { test, expect } from "@playwright/test";
+
+test.describe("Autenticación", () => {
+  test("login exitoso redirige al dashboard", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("usuario@tenmas.com");
+    await page.getByLabel("Contraseña").fill(process.env.TEST_PASSWORD!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+
+    await expect(page).toHaveURL(/\/dashboard/);
+    await expect(page.getByText("Bienvenido")).toBeVisible();
+  });
+
+  test("credenciales incorrectas muestran error", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("usuario@tenmas.com");
+    await page.getByLabel("Contraseña").fill("password_incorrecto");
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+
+    await expect(page.getByText(/credenciales inválidas/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("usuario no autenticado es redirigido al login", async ({ page }) => {
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("logout limpia la sesión", async ({ page }) => {
+    // Login primero
+    await page.goto("/login");
+    await page.getByLabel("Email").fill("usuario@tenmas.com");
+    await page.getByLabel("Contraseña").fill(process.env.TEST_PASSWORD!);
+    await page.getByRole("button", { name: "Iniciar sesión" }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    // Logout
+    await page.getByRole("button", { name: "Cerrar sesión" }).click();
+    await expect(page).toHaveURL(/\/login/);
+
+    // Verificar que la sesión se limpió
+    await page.goto("/dashboard");
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+```
+
+**Variables de entorno para tests de auth:**
+
+```bash
+# .env.test (no commitear)
+TEST_PASSWORD=password_del_usuario_de_prueba
+TEST_USER_EMAIL=usuario@tenmas.com
+```
+
+```typescript
+// playwright.config.ts — agregar para cargar .env.test
+import { defineConfig } from "@playwright/test";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env.test" });
+```
+
+---
+
+#### Patrón recomendado: autenticación compartida entre tests
+
+Si múltiples tests requieren estar logueado, usa `storageState` para no repetir el login en cada test:
+
+```typescript
+// tests/setup/auth.setup.ts
+import { test as setup } from "@playwright/test";
+
+setup("autenticar usuario de prueba", async ({ page }) => {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(process.env.TEST_USER_EMAIL!);
+  await page.getByLabel("Contraseña").fill(process.env.TEST_PASSWORD!);
+  await page.getByRole("button", { name: "Iniciar sesión" }).click();
+  await page.waitForURL(/\/dashboard/);
+
+  // Guarda la sesión en disco
+  await page.context().storageState({ path: "tests/.auth/user.json" });
+});
+```
+
+```typescript
+// playwright.config.ts — agregar proyecto de setup
+projects: [
+  {
+    name: "setup",
+    testMatch: /setup\/.*\.setup\.ts/,
+  },
+  {
+    name: "chromium",
+    use: {
+      ...devices["Desktop Chrome"],
+      storageState: "tests/.auth/user.json", // reutiliza sesión
+    },
+    dependencies: ["setup"], // corre setup primero
+  },
+],
+```
+
+```bash
+# .gitignore — agregar
+tests/.auth/
+```
+
+Con este patrón, el login corre una sola vez y todos los tests de la suite reutilizan la sesión guardada.
+
+---
+
 ### Verificación
 
 ```bash
