@@ -703,4 +703,4 @@ Al terminar el día, verifica:
 - [Playwright Docs — Configuration](https://playwright.dev/docs/test-configuration)
 - [Playwright Docs — CI/CD](https://playwright.dev/docs/ci)
 
-➡️ **Siguiente:** Día 4 — LangChain (próximamente)
+➡️ **Siguiente:** [Día 4 — LangChain + Validación del Stack](./dia-04-langchain-validacion)
