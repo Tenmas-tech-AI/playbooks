@@ -540,46 +540,6 @@ curl -X POST http://localhost:3001/review \
 
 ---
 
-## Checklist del Día 4 — Stack completo Días 1–4
-
-
-Al terminar, marca cada item. Si alguno falla, no avances al Día 5.
-
-**Día 1 — GitHub Copilot:**
-- [ ] Copilot genera sugerencias de código en el IDE
-- [ ] La cuenta Business está activa (no individual)
-
-**Día 2 — GitHub Security:**
-- [ ] Dependabot alerts activado en los repos de Tenmás
-- [ ] Secret scanning activado
-- [ ] PR-Agent comenta automáticamente en PRs con `/review`
-
-**Día 3 — n8n:**
-- [ ] n8n corre en `http://localhost:5678`
-- [ ] Al menos 1 workflow ejecuta sin errores
-- [ ] Webhook de GitHub configurado
-
-**Día 3 — Playwright:**
-- [ ] `npx playwright test` retorna todos los tests en verde
-- [ ] El GitHub Action de Playwright pasa en el PR
-
-**Día 4 — LangChain:**
-- [ ] `ANTHROPIC_API_KEY` o `OPENAI_API_KEY` cargada correctamente
-- [ ] El agent de PR Reviewer ejecuta y retorna respuesta coherente (`npx tsx scripts/ai/pr-reviewer.ts`)
-- [ ] El endpoint HTTP del agent responde en `localhost:3001`
-
-**Día 4 — LangSmith:**
-- [ ] Cuenta creada en [smith.langchain.com](https://smith.langchain.com)
-- [ ] `LANGCHAIN_TRACING_V2=true` y `LANGCHAIN_API_KEY` en el `.env`
-- [ ] Las trazas aparecen en el dashboard después de ejecutar el script
-
-**Integración:**
-- [ ] n8n puede llamar al agent de LangChain via HTTP Request
-- [ ] LangSmith registra las trazas de cada ejecución del agent
-- [ ] No hay errores de autenticación entre servicios
-
----
-
 ## Recursos
 
 - [LangChain JS Docs](https://js.langchain.com/docs/)
