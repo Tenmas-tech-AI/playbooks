@@ -25,7 +25,7 @@ Al terminar las 2 semanas, el equipo debe tener:
 | [**Día 2**](./dia-02-github-security-promptlayer) | Seguridad + Observabilidad | GitHub Security, PromptLayer | ✅ Completo |
 | [**Día 3**](./dia-03-n8n-playwright) | Automatización + Testing | n8n, Playwright | ✅ Completo |
 | [**Día 4**](./dia-04-langchain-validacion) | Pipelines de IA + Validación | LangChain, LangSmith | ✅ Completo |
-| Día 5 | Monitoreo | Grafana, Métricas baseline | 🔲 Pendiente |
+| [**Día 5**](./dia-05-grafana-timescaledb) | Monitoreo | Grafana, TimescaleDB | 🔲 Pendiente |
 
 ### Semana 2 — Estándares y Documentación
 
