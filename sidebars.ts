@@ -33,6 +33,7 @@ const sidebars: SidebarsConfig = {
         'semana-1-2/dia-01-cursor-coderabbit',
         'semana-1-2/dia-02-github-security-promptlayer',
         'semana-1-2/dia-03-n8n-playwright',
+        'semana-1-2/dia-04-langchain-validacion',
       ],
     },
     {
