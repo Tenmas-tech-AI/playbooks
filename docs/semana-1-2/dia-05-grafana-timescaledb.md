@@ -5,7 +5,9 @@ title: "Día 5: Grafana + TimescaleDB + Métricas baseline"
 
 # Día 5: Grafana + TimescaleDB + Métricas baseline
 
-**Duración:** ~5 horas | **Estado:** 🔲 Pendiente
+**Duración:** ~5 horas | **Estado:** ✅ Completo
+
+**Dashboard:** [Tenmás Engineering Metrics](https://tenmas.grafana.net/d/lif9mp7/pr-week)
 
 ⬅️ **Anterior:** [Día 4 — LangChain + Validación del Stack](./dia-04-langchain-validacion)
 
@@ -173,7 +175,13 @@ GITHUB_TOKEN=ghp_xxxx       # Personal Access Token con scope: repo, read:org
 GITHUB_ORG=Tenmas-tech-AI   # organización de GitHub
 ```
 
-El token lo creas en: GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → permisos: `Pull requests: Read`, `Contents: Read`.
+:::warning Token clásico, no Fine-grained
+Los Fine-grained tokens requieren aprobación del dueño de la organización. Para equipos pequeños, usa **Classic tokens** en cambio:
+
+GitHub → Settings → Developer settings → Personal access tokens → **Tokens (classic)** → scopes: `repo`
+
+Esto evita el error `401 Bad credentials` cuando el token no ha sido aprobado a nivel org.
+:::
 
 ### Script de sincronización
 
@@ -181,6 +189,8 @@ Crea el archivo `scripts/metrics/sync-github.ts`:
 
 ```typescript
 import "dotenv/config";
+// TimescaleDB Cloud usa una cadena de certificados self-signed — deshabilitar verificación estricta
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 import { Pool } from "pg";
 import { Octokit } from "@octokit/rest";
 
@@ -188,6 +198,7 @@ const db = new Pool({ connectionString: process.env.TIMESCALE_URL });
 const gh = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 const ORG = process.env.GITHUB_ORG!;
+const REPOS = (process.env.GITHUB_REPOS ?? "playbooks").split(",");
 
 async function syncPRs(repo: string, since: Date) {
   console.log(`Syncing PRs for ${ORG}/${repo} since ${since.toISOString()}`);
@@ -242,19 +253,7 @@ async function syncPRs(repo: string, since: Date) {
   }
 }
 
-async function main() {
-  // Sincronizar últimas 4 semanas por defecto
-  const since = new Date();
-  since.setDate(since.getDate() - 28);
-
-  // Lista de repos a sincronizar
-  const repos = ["playbooks"]; // agrega más repos de Tenmas-tech-AI
-
-  for (const repo of repos) {
-    await syncPRs(repo, since);
-  }
-
-  // Actualizar métricas semanales agregadas
+async function updateWeeklyMetrics() {
   await db.query(`
     INSERT INTO weekly_metrics (week, repo, prs_merged, avg_cycle_time_hours, bug_prs, ai_prs)
     SELECT
@@ -272,15 +271,32 @@ async function main() {
           avg_cycle_time_hours = EXCLUDED.avg_cycle_time_hours,
           ai_prs = EXCLUDED.ai_prs
   `);
+  console.log("Weekly metrics updated.");
+}
 
+async function main() {
+  const since = new Date();
+  since.setDate(since.getDate() - 28);
+
+  for (const repo of REPOS) {
+    await syncPRs(repo.trim(), since);
+  }
+
+  await updateWeeklyMetrics();
   console.log("Sync completed.");
   await db.end();
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error("Sync failed:", err.message);
   process.exit(1);
 });
+```
+
+Agrega la variable de repos al `.env`:
+
+```bash
+GITHUB_REPOS=playbooks  # separa múltiples repos con coma: playbooks,backend,frontend
 ```
 
 ### Instalar dependencias
@@ -347,6 +363,46 @@ SSL Mode: require
 
 4. **Save & test** — debe mostrar "Database connection OK"
 
+### Cómo agregar visualizaciones en Grafana
+
+Cada panel en Grafana sigue este flujo. Repítelo para cada una de las 6 métricas:
+
+1. **Crear o abrir el dashboard**
+   - En el menú lateral: **Dashboards → New → New dashboard**
+   - Si ya tienes el dashboard: ábrelo y haz click en **Add → Visualization** (esquina superior derecha)
+
+2. **Cambiar el data source**
+   - En el panel editor, arriba a la izquierda verás un selector de data source — por defecto dice `grafanacloud-tenmas-prom` (Prometheus)
+   - **Cámbialo a tu conexión de TimescaleDB** (la que creaste en el paso anterior, ej. `timescaledb` o `PostgreSQL`)
+   - Si no aparece, verifica que el data source fue guardado con "Save & test" exitosamente
+
+3. **Escribir el query SQL**
+   - En el editor de query verás un campo de texto donde escribes SQL directamente
+   - Pega el query del panel correspondiente (ver más abajo)
+   - Haz click en **Run query** para verificar que retorna datos
+
+4. **Elegir el tipo de visualización**
+   - En el panel derecho, en **Visualization**, selecciona el tipo: `Stat`, `Gauge`, `Time series`, etc.
+   - Cada tipo tiene opciones propias (umbrales de color, unidades, etc.)
+
+5. **Configurar umbrales (Thresholds)**
+   - En el panel derecho → **Thresholds** → agrega los valores con sus colores
+   - Los valores están documentados en cada panel abajo
+
+6. **Guardar el panel**
+   - Click en **Apply** (esquina superior derecha) para volver al dashboard
+   - Ajusta el tamaño arrastrando las esquinas del panel
+
+7. **Guardar el dashboard**
+   - Ícono de guardar (💾) → asigna nombre: **Tenmás Engineering Metrics**
+   - Guarda también la URL del dashboard — termina en `/d/XXXX/nombre`
+
+:::tip Data source vs. Prometheus
+El error más común: escribir el query SQL pero el data source sigue en Prometheus. Grafana no te avisa — simplemente no retorna datos. **Siempre verifica que el data source selector muestre PostgreSQL/TimescaleDB antes de escribir el query.**
+:::
+
+---
+
 ### Crear los 6 panels de métricas
 
 Crea un nuevo dashboard: **Dashboards → New → New dashboard → Add visualization**.
@@ -367,7 +423,7 @@ GROUP BY 1
 ORDER BY 1
 ```
 
-Threshold: rojo < 6, amarillo < 8.5, verde >= 8.5
+Threshold: rojo &lt; 6, amarillo &lt; 8.5, verde ≥ 8.5
 
 ---
 
@@ -385,7 +441,7 @@ GROUP BY 1
 ORDER BY 1
 ```
 
-Threshold: verde <= 48, amarillo <= 72, rojo > 72
+Threshold: verde ≤ 48, amarillo ≤ 72, rojo > 72
 
 ---
 
@@ -404,7 +460,7 @@ FROM pr_metrics
 WHERE merged_at >= NOW() - INTERVAL '7 days'
 ```
 
-Threshold: rojo < 50, amarillo < 70, verde >= 70
+Threshold: rojo &lt; 50, amarillo &lt; 70, verde ≥ 70
 
 ---
 
@@ -422,7 +478,7 @@ ORDER BY time DESC
 LIMIT 1
 ```
 
-Threshold: rojo < 60, amarillo < 80, verde >= 80
+Threshold: rojo &lt; 60, amarillo &lt; 80, verde ≥ 80
 
 :::info Poblar coverage manualmente
 Mientras no tienes CI reportando cobertura automáticamente, inserta el valor base:
@@ -453,7 +509,7 @@ FROM pr_metrics
 WHERE merged_at >= NOW() - INTERVAL '30 days'
 ```
 
-Threshold: verde <= 2.1, amarillo <= 5, rojo > 5
+Threshold: verde ≤ 2.1, amarillo ≤ 5, rojo > 5
 
 ---
 
@@ -500,14 +556,60 @@ Message: "Cycle time supera 72h — revisar PRs bloqueados"
 
 ## Parte 5: Troubleshooting
 
-**Los 3 errores más comunes:**
+Estos son los 3 problemas reales encontrados durante el setup del Día 5, documentados para que no pierdas tiempo en ellos:
 
-### Error: `SSL SYSCALL error: EOF detected`
+### Error: `self-signed certificate in certificate chain` al conectar TimescaleDB
 
-TimescaleDB requiere `sslmode=require`. Verifica el connection string:
+**Síntoma:** El script falla con `Error: self-signed certificate in certificate chain` aunque el connection string tiene `sslmode=require`.
+
+**Causa:** TimescaleDB Cloud usa una cadena de certificados SSL que el validador de Node.js rechaza, incluso con `ssl: { rejectUnauthorized: false }` en el Pool config — porque el parámetro del connection string (`sslmode=require`) tiene precedencia.
+
+**Fix:** Deshabilitar la verificación SSL a nivel de proceso, **antes de importar `pg`**:
+
+```typescript
+import "dotenv/config";
+// IMPORTANTE: debe ir ANTES del import de pg
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+import { Pool } from "pg";
+```
+
+El orden importa — si pones el workaround después del import, no funciona.
+
+---
+
+### Error: `401 Bad credentials` con GitHub Personal Access Token
+
+**Síntoma:** El script falla con `RequestError: Bad credentials` aunque el token parece válido.
+
+**Causa:** Los Fine-grained tokens para organizaciones requieren que el **dueño de la org** apruebe el acceso. Si no se ha aprobado, la API devuelve 401.
+
+**Fix:** Usa un **Classic token** (no Fine-grained):
+
+```
+GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+Scopes requeridos: repo (incluye read:org automáticamente)
+```
+
+Los Classic tokens no necesitan aprobación de org — funcionan de inmediato.
+
+---
+
+### Error: `No data` en panel de Grafana con query SQL correcto
+
+**Síntoma:** El panel muestra "No data" aunque el query SQL es válido y hay datos en TimescaleDB.
+
+**Causa:** El data source selector del panel editor está apuntando a Prometheus (`grafanacloud-tenmas-prom`), no a PostgreSQL. Grafana no te avisa del error — simplemente no ejecuta el SQL.
+
+**Fix:** En el editor del panel, verificar el selector en la parte superior izquierda y cambiarlo a la conexión de TimescaleDB/PostgreSQL antes de escribir el query.
+
+---
+
+### Error: `SSL SYSCALL error: EOF detected` al conectar con psql
+
+Si tienes este error al usar `psql` directamente, verifica el connection string:
 
 ```bash
-# Incorrecto
+# Incorrecto (falta sslmode)
 postgresql://user:pass@host:5432/tsdb
 
 # Correcto
@@ -529,19 +631,6 @@ Si usas un usuario separado para Grafana (recomendado en producción):
 CREATE USER grafana_reader WITH PASSWORD 'xxxx';
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO grafana_reader;
 ```
-
-### Error: `No data` en Grafana panel
-
-El rango de tiempo de Grafana no coincide con los datos. Verifica:
-
-1. El selector de tiempo en Grafana (esquina superior derecha): cámbialo a **Last 30 days**
-2. Que el script de sync corrió y tiene datos:
-
-```bash
-psql "$TIMESCALE_URL" -c "SELECT COUNT(*), MIN(merged_at), MAX(merged_at) FROM pr_metrics;"
-```
-
-3. Que `$__timeFilter(merged_at)` está en el query — si el campo de tiempo se llama distinto, ajústalo.
 
 ### Qué NO configurar todavía
 

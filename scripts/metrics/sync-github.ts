@@ -1,4 +1,6 @@
 import "dotenv/config";
+// TimescaleDB Cloud uses a self-signed cert chain — disable strict verification
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 import { Pool } from "pg";
 import { Octokit } from "@octokit/rest";
 
