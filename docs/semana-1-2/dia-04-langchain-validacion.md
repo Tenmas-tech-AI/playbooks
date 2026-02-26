@@ -5,7 +5,7 @@ title: "Día 4: LangChain + Validación del Stack"
 
 # Día 4: LangChain + Validación del Stack
 
-**Duración:** ~4 horas | **Estado:** Pendiente
+**Duración:** ~4 horas | **Estado:** ✅ Completo
 
 ⬅️ **Anterior:** [Día 3 — n8n + Playwright](./dia-03-n8n-playwright)
 
@@ -14,6 +14,7 @@ title: "Día 4: LangChain + Validación del Stack"
 Al terminar este día debes tener:
 - LangChain instalado y corriendo con Claude (Anthropic) o GPT (OpenAI)
 - Un agent funcional de prueba que resuelve una tarea real
+- LangSmith configurado para observabilidad de las llamadas al LLM
 - Todo el stack de los Días 1–4 validado y comunicándose sin errores
 
 ---
@@ -55,8 +56,19 @@ pip install langchain langchain-anthropic langchain-openai
 # .env
 ANTHROPIC_API_KEY=sk-ant-xxxx
 OPENAI_API_KEY=sk-xxxx          # solo si usas OpenAI
-LANGCHAIN_TRACING_V2=false      # activar solo cuando integres LangSmith
+
+# LangSmith — observabilidad (ver Parte 2)
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_xxxx
+LANGCHAIN_PROJECT=nombre-del-proyecto
 ```
+
+:::caution
+Nunca subas el `.env` al repositorio. Asegúrate de que está en el `.gitignore`:
+```
+.env
+```
+:::
 
 ### Configuración mínima para el stack de Tenmás
 
@@ -217,8 +229,7 @@ La respuesta debe aparecer en consola en menos de 10 segundos. Si tarda más de 
 ### Qué NO configurar todavía
 
 - **Pinecone / vector stores** — se integran en la fase de RAG (no está en el scope de semanas 1-2)
-- **LangSmith** — observabilidad avanzada de LangChain, se activa cuando haya agents en producción
-- **Agents con tools complejas** — el agent de prueba es intencional mente simple
+- **Agents con tools complejas** — el agent de prueba es intencionalmente simple
 - **Memory persistente** — requiere base de datos, se diseña según el proyecto específico
 - **Streaming de respuestas** — útil para UX pero no necesario en esta fase
 
@@ -268,7 +279,133 @@ O cambia a un modelo más barato/rápido temporalmente: `claude-haiku-4-5-202510
 
 ---
 
-## Parte 2: Validación del stack completo
+## Parte 2: LangSmith — Observabilidad de LangChain
+
+**Tiempo estimado:** 30 minutos
+
+LangSmith es el dashboard oficial de LangChain. Registra automáticamente cada ejecución del pipeline: qué prompt se mandó, qué retornó el LLM, cuánto tardó cada paso, cuántos tokens se usaron.
+
+### LangSmith vs PromptLayer
+
+Ambas herramientas son complementarias — se usan en momentos distintos del ciclo de desarrollo:
+
+| | **LangSmith** | **PromptLayer** |
+|---|---|---|
+| **Enfoque** | Debuggear el pipeline completo | Gestionar y versionar prompts |
+| **Qué muestra** | Cada paso del chain (prompt → LLM → parser) | La llamada al LLM y la respuesta |
+| **Mejor para** | Entender por qué falló un agent | Ver qué prompt genera mejores respuestas |
+| **Versionado de prompts** | No | Sí — A/B testing de prompts |
+| **Configuración** | Variables de entorno, nada en el código | Wrapper en el cliente |
+
+**Regla práctica:**
+- Usa **LangSmith** cuando estás **desarrollando** y necesitas ver qué pasa dentro del pipeline
+- Usa **PromptLayer** cuando estás **iterando sobre el prompt** y quieres comparar versiones en producción
+
+### Setup de LangSmith
+
+**1. Crea la cuenta:**
+
+Ve a [smith.langchain.com](https://smith.langchain.com) y crea una cuenta gratuita (no requiere tarjeta de crédito).
+
+**2. Obtén la API key:**
+
+Settings → API Keys → **Create API Key**
+
+La key empieza con `lsv2_pt_...`
+
+**3. Agrega las variables al `.env`:**
+
+```bash
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_xxxx
+LANGCHAIN_PROJECT=tenmas-playbooks   # nombre del proyecto en LangSmith
+```
+
+**No hay que cambiar nada en el código** — LangChain detecta estas variables automáticamente y envía las trazas a LangSmith en cada ejecución.
+
+### Ejecutar el script con tracing activo
+
+```bash
+npx tsx scripts/ai/pr-reviewer.ts
+```
+
+El script en este repo está en [scripts/ai/pr-reviewer.ts](../../scripts/ai/pr-reviewer.ts):
+
+```typescript
+import "dotenv/config"; // carga .env automáticamente, incluidas las vars de LangSmith
+import { ChatAnthropic } from "@langchain/anthropic";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+
+const llm = new ChatAnthropic({
+  model: "claude-haiku-4-5-20251001",
+  temperature: 0,
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
+
+const prompt = ChatPromptTemplate.fromMessages([
+  ["system", `Eres un code reviewer técnico. Analiza el diff de PR y responde en español con:
+1. Resumen de cambios (2-3 líneas)
+2. Riesgos detectados (si los hay)
+3. Sugerencia de mejora más importante (solo una)
+
+Sé directo y conciso.`],
+  ["human", "Diff del PR:\n\n{diff}"],
+]);
+
+const chain = prompt.pipe(llm).pipe(new StringOutputParser());
+
+async function reviewPR(diff: string): Promise<string> {
+  return chain.invoke({ diff });
+}
+```
+
+### Salida esperada en consola
+
+```
+Analizando diff con LangChain + Claude...
+
+## Resumen
+Se añade lógica de autenticación que consulta usuarios en BD y genera token.
+Sin embargo, contiene una vulnerabilidad crítica de seguridad.
+
+## Riesgos detectados
+🔴 SQL Injection: La consulta concatena directamente `email` sin escapar.
+
+## Sugerencia de mejora
+Usa prepared statements:
+const user = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+
+✅ LangChain + Anthropic funcionando correctamente
+```
+
+### Qué ver en el dashboard de LangSmith
+
+Después de ejecutar el script, ve a [smith.langchain.com](https://smith.langchain.com) → proyecto **tenmas-playbooks**:
+
+- **Runs** — cada ejecución con el prompt completo y la respuesta
+- **Latency** — cuánto tardó la llamada al LLM
+- **Tokens** — tokens de entrada y salida (útil para estimar costos)
+- **Trace** — el pipeline completo paso a paso: `ChatPromptTemplate → ChatAnthropic → StringOutputParser`
+
+### Troubleshooting
+
+**Las trazas no aparecen en LangSmith:**
+
+```bash
+# Verifica que las variables están cargadas
+node -e "require('dotenv/config'); console.log(process.env.LANGCHAIN_TRACING_V2, process.env.LANGCHAIN_API_KEY?.slice(0,10))"
+```
+
+Si `LANGCHAIN_TRACING_V2` no es `"true"` (string, no booleano), el tracing no se activa.
+
+**Error: `LangSmithAuthError`:**
+
+La `LANGCHAIN_API_KEY` está mal copiada. Regénera la key en smith.langchain.com → Settings → API Keys.
+
+---
+
+## Parte 3: Validación del stack completo
 
 **Tiempo estimado:** 1.5 horas
 
@@ -341,17 +478,16 @@ npx playwright test --reporter=line
 
 ❌ Si fallan: verifica que la app está corriendo en el puerto configurado en `playwright.config.ts`.
 
-### Verificación Día 4: LangChain
+### Verificación Día 4: LangChain + LangSmith
 
 ```bash
-# TypeScript
-npx tsx src/ai/pr-reviewer.ts
-
-# Python
-python src/ai/pr_reviewer.py
+# Ejecuta el script del repo
+npx tsx scripts/ai/pr-reviewer.ts
 ```
 
 ✅ LangChain está funcionando si el agent retorna el análisis del diff de prueba en menos de 30 segundos.
+
+✅ LangSmith está funcionando si la traza aparece en [smith.langchain.com](https://smith.langchain.com) → proyecto configurado en `LANGCHAIN_PROJECT`.
 
 ### Verificación de integración: n8n → LangChain
 
@@ -406,6 +542,7 @@ curl -X POST http://localhost:3001/review \
 
 ## Checklist del Día 4 — Stack completo Días 1–4
 
+
 Al terminar, marca cada item. Si alguno falla, no avances al Día 5.
 
 **Día 1 — GitHub Copilot:**
@@ -428,12 +565,17 @@ Al terminar, marca cada item. Si alguno falla, no avances al Día 5.
 
 **Día 4 — LangChain:**
 - [ ] `ANTHROPIC_API_KEY` o `OPENAI_API_KEY` cargada correctamente
-- [ ] El agent de PR Reviewer ejecuta y retorna respuesta coherente
+- [ ] El agent de PR Reviewer ejecuta y retorna respuesta coherente (`npx tsx scripts/ai/pr-reviewer.ts`)
 - [ ] El endpoint HTTP del agent responde en `localhost:3001`
+
+**Día 4 — LangSmith:**
+- [ ] Cuenta creada en [smith.langchain.com](https://smith.langchain.com)
+- [ ] `LANGCHAIN_TRACING_V2=true` y `LANGCHAIN_API_KEY` en el `.env`
+- [ ] Las trazas aparecen en el dashboard después de ejecutar el script
 
 **Integración:**
 - [ ] n8n puede llamar al agent de LangChain via HTTP Request
-- [ ] PromptLayer registra las llamadas del agent (si está integrado)
+- [ ] LangSmith registra las trazas de cada ejecución del agent
 - [ ] No hay errores de autenticación entre servicios
 
 ---
@@ -444,6 +586,8 @@ Al terminar, marca cada item. Si alguno falla, no avances al Día 5.
 - [LangChain Python Docs](https://python.langchain.com/docs/)
 - [@langchain/anthropic](https://www.npmjs.com/package/@langchain/anthropic)
 - [LangChain — Expression Language (LCEL)](https://js.langchain.com/docs/concepts/lcel)
+- [LangSmith](https://smith.langchain.com) — dashboard de observabilidad
+- [LangSmith Docs](https://docs.smith.langchain.com/)
 - [PromptLayer + LangChain](https://docs.promptlayer.com/languages/python#langchain)
 
 ➡️ **Siguiente:** Día 5 — Grafana + Métricas baseline (próximamente)
